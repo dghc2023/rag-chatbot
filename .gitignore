@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.dev.vars
+*.local.*
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures
+*.apk
+*.aab
+*.keystore

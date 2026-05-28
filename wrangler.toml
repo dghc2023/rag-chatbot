@@ -1,0 +1,25 @@
+name = "website-rag-worker"
+main = "src/worker.ts"
+compatibility_date = "2024-07-01"
+
+[vars]
+# Choose 'gemini', 'qwen', or 'siliconflow'
+PROVIDER = "siliconflow"
+# Make sure this matches your Vectorize index dimension
+EMBED_DIM = 1024
+# LLM model for generation
+LLM_MODEL = "deepseek-ai/DeepSeek-V4-Flash"
+# SiliconFlow embedding model
+SILICONFLOW_EMBED_MODEL = "Qwen/Qwen3-VL-Embedding-8B"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "website-rag"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rag-chatbot"
+database_id = "afdb9668-ae10-454e-aecb-7a9628837c34"
+
+[observability]
+enabled = true
