@@ -23,7 +23,6 @@ jobs:
 
       - name: Setup Android SDK
         run: |
-          # Download cmdline-tools
           mkdir -p $HOME/android/cmdline-tools
           cd $HOME/android/cmdline-tools
           curl -sLo tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
@@ -31,12 +30,10 @@ jobs:
           mv cmdline-tools latest
           echo "ANDROID_SDK_ROOT=$HOME/android" >> $GITHUB_ENV
           echo "$HOME/android/cmdline-tools/latest/bin" >> $GITHUB_PATH
-
-          # Accept licenses & install required SDK
           yes | $HOME/android/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
           $HOME/android/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
 
-      - name: Build APK
+      - name: Build unsigned APK
         run: |
           cd android
           if [ ! -f gradlew ]; then
@@ -45,15 +42,28 @@ jobs:
           chmod +x gradlew
           ANDROID_HOME=$HOME/android ./gradlew assembleRelease --no-daemon
 
-      - name: Sign APK (debug key)
+      - name: Align and Sign APK
         run: |
+          # Create debug keystore
           keytool -genkey -v -keystore debug.keystore -alias debug \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass android -keypass android -dname "CN=Dev,OU=Dev,O=Dev,L=City,ST=State,C=CN"
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
-            -keystore debug.keystore -storepass android \
-            android/app/build/outputs/apk/release/app-release-unsigned.apk debug
-          mv android/app/build/outputs/apk/release/app-release-unsigned.apk RAG-Chat-v1.apk
+
+          UNSIGNED=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          ALIGNED=app-release-aligned.apk
+          SIGNED=RAG-Chat-v1.apk
+
+          # Find apksigner and zipalign
+          APKSIGNER=$HOME/android/build-tools/34.0.0/apksigner
+          ZIPALIGN=$HOME/android/build-tools/34.0.0/zipalign
+
+          # Align
+          $ZIPALIGN -v -p 4 $UNSIGNED $ALIGNED
+
+          # Sign with both V1 and V2 schemes
+          $APKSIGNER sign --ks debug.keystore --ks-pass pass:android \
+            --ks-key-alias debug --v1-signing-enabled true --v2-signing-enabled true \
+            --out $SIGNED $ALIGNED
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
