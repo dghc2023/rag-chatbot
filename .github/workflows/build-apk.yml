@@ -22,13 +22,28 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          # Download cmdline-tools
+          mkdir -p $HOME/android/cmdline-tools
+          cd $HOME/android/cmdline-tools
+          curl -sLo tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q tools.zip
+          mv cmdline-tools latest
+          echo "ANDROID_SDK_ROOT=$HOME/android" >> $GITHUB_ENV
+          echo "$HOME/android/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+          # Accept licenses & install required SDK
+          yes | $HOME/android/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
+          $HOME/android/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
 
       - name: Build APK
         run: |
           cd android
-          gradle wrapper --gradle-version 8.5
-          ./gradlew assembleRelease --no-daemon
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.5
+          fi
+          chmod +x gradlew
+          ANDROID_HOME=$HOME/android ./gradlew assembleRelease --no-daemon
 
       - name: Sign APK (debug key)
         run: |
