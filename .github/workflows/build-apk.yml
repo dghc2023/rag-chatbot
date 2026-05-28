@@ -40,7 +40,7 @@ jobs:
         run: |
           cd android
           if [ ! -f gradlew ]; then
-            gradle wrapper --gradle-version 8.5
+            gradle wrapper --gradle-version 8.4
           fi
           chmod +x gradlew
           ANDROID_HOME=$HOME/android ./gradlew assembleRelease --no-daemon
